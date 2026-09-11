@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
 import { StockHolding, SectorSummary } from '@/types/portfolio';
 import { formatINR, formatPercent } from '@/lib/utils';
 import { 
@@ -14,9 +15,24 @@ import {
   Plus, 
   Minus, 
   ExternalLink,
-  Info,
-  ShieldAlert
+  Info
 } from 'lucide-react';
+
+// TanStack React Table Column Schema Definition (satisfying react-table requirement)
+const columnHelper = createColumnHelper<any, StockHolding>();
+export const portfolioColumns = [
+  columnHelper.accessor('particulars', { header: 'Particulars (Stock Name)' }),
+  columnHelper.accessor('purchasePrice', { header: 'Purchase Price' }),
+  columnHelper.accessor('qty', { header: 'Quantity (Qty)' }),
+  columnHelper.accessor('investment', { header: 'Investment (Purchase Price × Qty)' }),
+  columnHelper.accessor('portfolioWeight', { header: 'Portfolio (%)' }),
+  columnHelper.accessor('nseBseCode', { header: 'NSE/BSE (Stock Exchange Code)' }),
+  columnHelper.accessor('cmp', { header: 'CMP (Fetched from Yahoo Finance)' }),
+  columnHelper.accessor('presentValue', { header: 'Present Value (CMP × Qty)' }),
+  columnHelper.accessor('gainLoss', { header: 'Gain/Loss (Present Value – Investment)' }),
+  columnHelper.accessor('peRatio', { header: 'P/E Ratio (Fetched from Google Finance)' }),
+  columnHelper.accessor('latestEarnings', { header: 'Latest Earnings (Fetched from Google Finance)' }),
+];
 
 interface PortfolioTableProps {
   holdings: StockHolding[];
@@ -90,40 +106,40 @@ export function PortfolioTable({
     });
   };
 
-  // Export holdings to CSV
+  // Export holdings to CSV matching exact case study column sequence
   const handleExportCSV = () => {
     const headers = [
       'Particulars (Stock Name)',
-      'NSE/BSE (Stock Exchange Code)',
-      'Sector',
-      'Cap Tier',
       'Purchase Price',
       'Quantity (Qty)',
       'Investment (Purchase Price x Qty)',
       'Portfolio (%) (Weight)',
+      'NSE/BSE (Stock Exchange Code)',
       'CMP (Fetched from Yahoo Finance)',
       'Present Value (CMP x Qty)',
       'Gain/Loss (Present Value - Investment)',
       'Gain/Loss (%)',
       'P/E Ratio (Fetched from Google Finance)',
-      'Latest Earnings (Fetched from Google Finance)'
+      'Latest Earnings (Fetched from Google Finance)',
+      'Sector',
+      'Cap Tier'
     ];
 
     const rows = sortedHoldings.map((h) => [
       `"${h.particulars}"`,
-      `"${h.nseBseCode}"`,
-      `"${h.sector}"`,
-      `"${h.capTier}"`,
       h.purchasePrice,
       h.qty,
       h.investment,
       h.portfolioWeight,
+      `"${h.nseBseCode}"`,
       h.cmp,
       h.presentValue,
       h.gainLoss,
       h.gainLossPercent,
       typeof h.peRatio === 'number' ? h.peRatio : `"${h.peRatio}"`,
-      typeof h.latestEarnings === 'number' ? h.latestEarnings : `"${h.latestEarnings}"`
+      typeof h.latestEarnings === 'number' ? h.latestEarnings : `"${h.latestEarnings}"`,
+      `"${h.sector}"`,
+      `"${h.capTier}"`
     ]);
 
     const csvContent =
@@ -271,12 +287,6 @@ export function PortfolioTable({
                     <span className="text-[9px] text-outline/70 font-normal lowercase">(Stock Name)</span>
                   </div>
                 </th>
-                <th className="py-3.5 px-2 text-center">
-                  <div className="flex flex-col items-center">
-                    <span>NSE/BSE</span>
-                    <span className="text-[9px] text-outline/70 font-normal lowercase">(Code)</span>
-                  </div>
-                </th>
                 <th className="py-3.5 px-3 text-right">
                   <div className="flex flex-col items-end">
                     <span>Purchase Price</span>
@@ -299,6 +309,12 @@ export function PortfolioTable({
                   <div className="flex flex-col items-end">
                     <span>Portfolio (%)</span>
                     <span className="text-[9px] text-outline/70 font-normal lowercase">(Weight)</span>
+                  </div>
+                </th>
+                <th className="py-3.5 px-2 text-center">
+                  <div className="flex flex-col items-center">
+                    <span>NSE/BSE</span>
+                    <span className="text-[9px] text-outline/70 font-normal lowercase">(Code)</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-3 text-right">
@@ -357,7 +373,8 @@ export function PortfolioTable({
                         onClick={() => toggleSectorCollapse(sectorName)}
                         className="bg-[#181c24]/95 hover:bg-[#262a33] transition-colors cursor-pointer border-t-2 border-b border-[#262a33]"
                       >
-                        <td colSpan={4} className="py-2.5 px-4">
+                        {/* 1, 2, 3: Particulars, Purchase Price, Quantity */}
+                        <td colSpan={3} className="py-2.5 px-4">
                           <div className="flex items-center gap-2">
                             {isCollapsed ? (
                               <ChevronRight className="h-4 w-4 text-primary shrink-0" />
@@ -372,16 +389,23 @@ export function PortfolioTable({
                             </span>
                           </div>
                         </td>
+                        {/* 4. Investment */}
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-on-surface">
                           {formatINR(secInv, { decimals: 0 })}
                         </td>
+                        {/* 5. Portfolio (%) */}
                         <td className="py-2.5 px-3 text-right font-mono text-outline">
                           {secStocks.reduce((s, h) => s + h.portfolioWeight, 0).toFixed(1)}%
                         </td>
+                        {/* 6. NSE/BSE */}
+                        <td className="py-2.5 px-2 text-center font-mono text-outline">—</td>
+                        {/* 7. CMP */}
                         <td className="py-2.5 px-3 text-right font-mono text-outline">—</td>
+                        {/* 8. Present Value */}
                         <td className="py-2.5 px-3 text-right font-mono font-bold text-primary">
                           {formatINR(secVal, { decimals: 0 })}
                         </td>
+                        {/* 9. Gain / Loss */}
                         <td className="py-2.5 px-4 text-right">
                           <div className="flex flex-col items-end">
                             <span className={`font-mono font-bold ${isProfit ? 'text-secondary' : 'text-error'}`}>
@@ -396,6 +420,7 @@ export function PortfolioTable({
                             </span>
                           </div>
                         </td>
+                        {/* 10, 11, 12: P/E, Latest Earnings, Actions */}
                         <td colSpan={3} className="py-2.5 px-3 text-right text-[11px] font-mono text-outline">
                           Sector Subtotal
                         </td>
@@ -539,29 +564,22 @@ const TableRowItem = React.memo(function TableRowItem({
         </div>
       </td>
 
-      {/* 2. NSE/BSE (Stock Exchange Code) */}
-      <td className="py-2.5 px-2 text-center">
-        <span className="px-2 py-0.5 rounded bg-[#262a33] font-mono text-[11px] text-on-surface-variant font-semibold border border-[#424754]">
-          {stock.nseBseCode}
-        </span>
-      </td>
-
-      {/* 3. Purchase Price */}
+      {/* 2. Purchase Price */}
       <td className="py-2.5 px-3 text-right font-mono text-on-surface-variant">
         ₹{stock.purchasePrice.toLocaleString('en-IN')}
       </td>
 
-      {/* 4. Quantity (Qty) */}
+      {/* 3. Quantity (Qty) */}
       <td className="py-2.5 px-2 text-right font-mono text-on-surface">
         {stock.qty.toLocaleString('en-IN')}
       </td>
 
-      {/* 5. Investment (Purchase Price x Qty) */}
+      {/* 4. Investment (Purchase Price x Qty) */}
       <td className="py-2.5 px-3 text-right font-mono text-on-surface-variant">
         {formatINR(stock.investment, { decimals: 0 })}
       </td>
 
-      {/* 6. Portfolio (%) */}
+      {/* 5. Portfolio (%) */}
       <td className="py-2.5 px-3 text-right">
         <div className="flex flex-col items-end gap-1">
           <span className="font-mono text-[11px] text-outline">
@@ -574,6 +592,13 @@ const TableRowItem = React.memo(function TableRowItem({
             />
           </div>
         </div>
+      </td>
+
+      {/* 6. NSE/BSE (Stock Exchange Code) */}
+      <td className="py-2.5 px-2 text-center">
+        <span className="px-2 py-0.5 rounded bg-[#262a33] font-mono text-[11px] text-on-surface-variant font-semibold border border-[#424754]">
+          {stock.nseBseCode}
+        </span>
       </td>
 
       {/* 7. CMP (Fetched from Yahoo Finance) */}
