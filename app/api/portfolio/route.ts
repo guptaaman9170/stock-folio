@@ -6,6 +6,7 @@ import { StockHolding, SectorSummary, PortfolioResponse, SectorType } from '@/ty
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const maxDuration = 30;
 
 function isIndianMarketOpen(): boolean {
   const now = new Date();
