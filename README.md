@@ -154,8 +154,8 @@ stock_folio/
 │   ├── layout.tsx                # Typography & root HTML wrapper
 │   └── page.tsx                  # Interactive client dashboard
 ├── components/
-│   ├── AlphaInsights.tsx         # AI insights (Top performer, lagging asset, etc.)
-│   ├── ExecutiveSummary.tsx      # Bento metrics (Invested, Value, P&L, Day change)
+│   ├── AlphaInsights.tsx         # Key outlier metrics (top/lagging performers, valuation)
+│   ├── ExecutiveSummary.tsx      # Portfolio overview metrics (Invested, Value, P&L, Day change)
 │   ├── Header.tsx                # Market hours, countdown timer, sync trigger
 │   ├── OrderModal.tsx            # Buy/Sell simulated execution ticket
 │   ├── PortfolioCharts.tsx       # Recharts (Alpha curve, Cap size, Sector spread)

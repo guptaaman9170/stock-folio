@@ -2,7 +2,7 @@
 
 **Company Case Study**: Octa Byte AI Pvt Ltd  
 **Project**: Dynamic Portfolio Dashboard with React.js, TypeScript, Tailwind CSS & Node.js  
-**Author**: Full Stack Engineering Candidate  
+**Author**: Aman Gupta  
 
 ---
 
@@ -79,7 +79,7 @@ Polling 26+ individual stocks every 15 seconds against external financial provid
 ## 4. Sector Grouping & Data Transformation
 
 ### Challenge 3: Hierarchical Summaries & Mathematical Consistency
-The assignment mandates displaying both individual stock lines and aggregated sector-level summaries:
+The application displays both individual stock lines and aggregated sector-level summaries:
 - Total Sector Investment
 - Total Sector Present Value
 - Sector Gain/Loss & Percentage
@@ -104,10 +104,10 @@ In `app/api/portfolio/route.ts`:
 
 ---
 
-## 5. User Interface & Institutional Visual Design
+## 5. User Interface & Visual Design
 
-### Design Philosophy
-- Built using the **Obsidian Institutional Dark Palette** (`#0f131c` background, `#1c2028` surface cards, emerald green profit indicators `#4edea3`, crimson red loss indicators `#ff5449`, and electric cyan accents `#4cd7f6`).
+### Design Implementation
+- Built using an institutional dark palette (`#0f131c` background, `#1c2028` surface cards, emerald green profit indicators `#4edea3`, crimson red loss indicators `#ff5449`, and cyan accents `#4cd7f6`).
 - Native Indian Currency formatting (`formatINR`) implementing the lakh/crore grouping standard (`₹12,34,567.00`).
 - Interactive Features:
   - **Live Tick Flashes**: Highlighting real-time market movements.
@@ -123,50 +123,30 @@ In `app/api/portfolio/route.ts`:
 - Full `.env` and `.env.example` configurations.
 - Compatible with Vercel, Netlify, and Docker Node.js runtimes.
 - Zero client-side API key exposure; all scraping and API calls are isolated in Next.js server-side routes (`/api/portfolio`).
+- Configured with `maxDuration = 30` to prevent serverless function timeouts on cloud providers.
 
 ---
 
-## 7. Evaluation Criteria Cross-Reference Matrix
+## 7. Key Architectural Decisions & Engineering Rationale
 
-| Criteria (Page 4 & 5 of Case Study) | Implementation Details | Code Location |
-|---|---|---|
-| **Functionality** | Table with all 12 required columns, 15s dynamic polling, sector grouping, visual green/red indicators | `components/PortfolioTable.tsx`, `app/page.tsx` |
-| **Code Quality & Maintainability** | Fully typed TypeScript interfaces, modular separation (`lib/services`, `components`, `types`, `data`) | `types/portfolio.ts`, `lib/services/*` |
-| **Performance** | In-memory TTL caching, `React.memo` on rows, `useMemo` for filtering/sorting, fast Turbopack compilation | `lib/services/cacheService.ts`, `components/PortfolioTable.tsx` |
-| **Error Handling** | `Promise.allSettled` parallel isolation, graceful fallback to documented fundamentals, UI error banner | `app/api/portfolio/route.ts`, `lib/services/yahooFinance.ts` |
-| **API Strategy** | Dual-provider integration: Yahoo Finance (CMP) + Google Finance (P/E, Earnings) with throttling | `lib/services/yahooFinance.ts`, `lib/services/googleFinance.ts` |
-| **User Interface & Visual Design** | Obsidian Institutional Dark palette, Bento metrics, Recharts Alpha Curve & Sector matrix, responsive drawer | `components/ExecutiveSummary.tsx`, `components/PortfolioCharts.tsx` |
-| **Problem Solving** | Solved unofficial API instability via 4-tier fallback and prevented rate-limiting with differential TTLs | `lib/services/cacheService.ts` |
+### 7.1 Dual Financial Data Ingestion Strategy
+Yahoo Finance and Google Finance serve complementary roles in this architecture:
+- **Yahoo Finance** provides real-time equity quotes (CMP), intraday volume, and previous close prices.
+- **Google Finance** provides key company valuation metrics: Price-to-Earnings (P/E) ratio and trailing Earnings Per Share (EPS).
 
----
+Because public, official REST APIs are not offered for either endpoint, requests are executed on the Node.js backend using `Promise.allSettled()` to query both providers concurrently while strictly isolating any provider failure.
 
-## 8. Interview Preparation & Code Defense Guide
+### 7.2 Rate Limiting (HTTP 429) Mitigation
+Polling 26 equities every 15 seconds could quickly exhaust public rate limits without proper safeguards:
+1. **Differential TTL In-Memory Caching (`cacheService.ts`)**: Real-time quotes use a 30-second cache window, while fundamental valuation multiples (which update quarterly) use longer TTLs to eliminate redundant scraping.
+2. **Stale-While-Revalidate Fallbacks**: In the event of a temporary upstream network timeout or throttling, the backend immediately returns the last known good cached state, guaranteeing consistent uptime.
 
-*(Reference for technical interviews to explain every line of code)*
+### 7.3 Concurrency & Asynchronous Event Loop Optimization
+Rather than serial sequential iteration (which would accumulate over 100 seconds of round-trip latency across 26 symbols), all external requests are dispatched in parallel via `Promise.allSettled()`. This reduces overall batch latency to the duration of the slowest single request (~2–4 seconds) while preventing one symbol's failure from blocking others.
 
-### Q1: Why did you use BOTH Yahoo Finance and Google Finance instead of just one?
-> **Answer**:  
-> "As specifically mandated in the Octa Byte AI case study requirements:
-> 1. **Yahoo Finance** is designated to retrieve real-time stock prices (Current Market Price - CMP) and daily price deltas.
-> 2. **Google Finance** is designated to retrieve valuation fundamentals: P/E Ratio (TTM) and Latest Earnings (EPS).
-> Neither provider offers an official free API for both datasets simultaneously without restrictions. By querying both in parallel on the server side using `Promise.allSettled()`, we combine real-time price feeds with fundamental multiples while isolating failures."
-
-### Q2: How do you prevent IP blocks (HTTP 429) from scraping Yahoo and Google Finance every 15 seconds?
-> **Answer**:  
-> "We implemented a two-fold mitigation:
-> 1. **Differential In-Memory TTL Caching (`cacheService.ts`)**: CMP quotes are cached for 30 seconds, while quarterly fundamentals (P/E ratio and earnings) are cached with extended validity because quarterly earnings do not change every 15 seconds.
-> 2. **Stale-While-Revalidate Fallback**: If an upstream request times out or is temporarily throttled, the service instantly serves the stale cached quote or our verified baseline Excel dataset, ensuring the client dashboard never experiences downtime."
-
-### Q3: How do you handle asynchronous operations and avoid blocking the Node.js event loop?
-> **Answer**:  
-> "Instead of sequential `await` calls in a loop (which would take over 100 seconds for 26 stocks), we dispatch all stock requests concurrently using `Promise.allSettled`. This achieves two key benefits:
-> 1. Total batch latency is bounded by the slowest single network request (~2 to 3 seconds).
-> 2. If one stock fails or times out, `Promise.allSettled` captures the rejection without aborting the other 25 stocks."
-
-### Q4: How is React rendering performance optimized when updating prices every 15 seconds?
-> **Answer**:  
-> "We utilized:
-> 1. **`React.memo`** on `TableRowItem` so that only rows whose prices or metadata actually changed are re-rendered.
-> 2. **`useMemo`** on table sorting, search filtering, and sector grouping calculations.
-> 3. Ref-based delta tracking (`previousHoldingsRef`) to trigger micro-animations (`flash-up` / `flash-down`) strictly on updated cells without re-rendering the entire table tree."
+### 7.4 Client-Side Re-render Optimization
+With automated 15-second polling cycles, maintaining smooth 60fps UI performance is achieved through:
+1. **`React.memo`** on table row components to restrict DOM re-renders exclusively to rows whose price deltas actually changed.
+2. **`useMemo`** for sector grouping aggregations and multi-criteria sorting/filtering.
+3. **Targeted CSS keyframe transitions** (`flash-up` / `flash-down`) applied directly to updated cells rather than triggering a re-render of the entire table tree.
 

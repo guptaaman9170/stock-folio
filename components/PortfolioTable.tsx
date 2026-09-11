@@ -18,7 +18,7 @@ import {
   Info
 } from 'lucide-react';
 
-// TanStack React Table Column Schema Definition (satisfying react-table requirement)
+// TanStack Table Column Definitions
 const columnHelper = createColumnHelper<any, StockHolding>();
 export const portfolioColumns = [
   columnHelper.accessor('particulars', { header: 'Particulars (Stock Name)' }),
@@ -518,7 +518,7 @@ export function PortfolioTable({
         <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#0a0e16] border border-[#262a33] text-[11px] text-outline">
           <Info className="h-4 w-4 text-primary shrink-0" />
           <span>
-            <strong>Data Source & Accuracy Notice</strong>: Stock prices (CMP) are fetched from Yahoo Finance, and fundamentals (P/E Ratio, Latest Earnings) are scraped from Google Finance via server-side Node.js tasks. In accordance with assignment requirements, resilient multi-tier caching and fallbacks are implemented to ensure zero disruption.
+            <strong>Data Source & Accuracy Notice</strong>: Real-time CMP quotes are sourced from Yahoo Finance and company valuation multiples (P/E Ratio, Latest Earnings) are retrieved from Google Finance. Data is cached with multi-tier fallbacks to ensure continuous service availability.
           </span>
         </div>
       </div>
@@ -526,7 +526,7 @@ export function PortfolioTable({
   );
 }
 
-// Subcomponent: Single Table Row wrapped in React.memo for optimal rendering performance
+// Table row component
 interface TableRowItemProps {
   stock: StockHolding;
   isTickUpdated: boolean;

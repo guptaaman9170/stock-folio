@@ -50,14 +50,14 @@ export function AlphaInsights({
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-tertiary shrink-0" />
           <span className="font-display text-xs sm:text-sm font-bold text-on-surface">
-            Institutional Alpha AI Insights
+            Portfolio Alpha & Outlier Highlights
           </span>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/20 shrink-0">
             Live
           </span>
         </div>
         <span className="text-[11px] font-mono text-outline hidden md:inline">
-          Black-Scholes & Sharpe Calculated Exposures
+          Relative Performance & Valuation Metrics
         </span>
       </div>
 

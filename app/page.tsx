@@ -240,7 +240,7 @@ export default function DashboardPage() {
                 stockCount={data.summary.stockCount}
               />
 
-              {/* SECTION 2: AI Alpha Insights */}
+              {/* Key Portfolio Outliers */}
               {(activeTab === 'overview' || activeTab === 'analytics') && (
                 <AlphaInsights
                   topPerformer={data.summary.topPerformer}
